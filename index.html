@@ -167,7 +167,7 @@
     <div class="cta-banner-content">
         <h2>Redo att starta ditt projekt?</h2>
         <p>Kontakta oss idag för en kostnadsfri prisuppskattning. Inga förpliktelser.</p>
-        <a href="#kontakt" class="cta cta-banner-btn">Kontakta oss</a>
+        <button type="button" class="cta cta-banner-btn" id="openContactModal">Kontakta oss</button>
     </div>
 </section>
 
@@ -202,6 +202,179 @@
     </div>
     <p class="footer-bottom">© 2026 Blekinge Elmontage. Alla rättigheter förbehållna. · <a href="https://www.elsakerhetsverket.se/kollaelforetaget/" target="_blank" rel="noopener">Registrerad hos Elsäkerhetsverket</a></p>
 </footer>
+
+<!-- ====== KONTAKT-POPUP (MODAL) ====== -->
+<div class="modal-overlay" id="contactModal" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <button type="button" class="modal-close" id="closeContactModal" aria-label="Stäng">×</button>
+
+        <h2 id="modalTitle">Kontakta oss</h2>
+        <p class="modal-intro">Berätta kort om ditt projekt så återkommer vi så snart vi kan. Du behöver bara fylla i namn, en kontaktväg (telefon eller e-post) och en beskrivning.</p>
+
+        <!--
+            NOTE: Byt ut action-URL:en nedan mot din egen Formspree-URL när kontot är skapat.
+        -->
+        <form id="contactForm" action="https://formspree.io/f/mkjnnyed" method="POST" novalidate>
+
+            <div class="form-field">
+                <label for="cf-name">Namn <span class="required">*</span></label>
+                <input type="text" id="cf-name" name="namn" required>
+            </div>
+
+            <div class="form-row">
+                <div class="form-field">
+                    <label for="cf-phone">Telefon</label>
+                    <input type="tel" id="cf-phone" name="telefon" placeholder="t.ex. 070-123 45 67">
+                </div>
+                <div class="form-field">
+                    <label for="cf-email">E-post</label>
+                    <input type="email" id="cf-email" name="epost" placeholder="dinepost@exempel.se">
+                </div>
+            </div>
+            <p class="form-hint" id="contactHint">Fyll i minst en av telefon eller e-post.</p>
+
+            <div class="form-field">
+                <label for="cf-type">Typ av jobb</label>
+                <select id="cf-type" name="typ_av_jobb">
+                    <option value="">Välj (frivilligt)</option>
+                    <option value="Installation">Installation</option>
+                    <option value="Felsökning">Felsökning</option>
+                    <option value="Underhåll">Underhåll</option>
+                    <option value="Annat">Annat</option>
+                </select>
+            </div>
+
+            <div class="form-field">
+                <label for="cf-desc">Beskrivning av projekt <span class="required">*</span></label>
+                <textarea id="cf-desc" name="beskrivning" rows="5" required placeholder="Berätta kort vad du behöver hjälp med..."></textarea>
+            </div>
+
+            <!-- Honeypot mot spam-bots (osynlig för människor) -->
+            <input type="text" name="_gotcha" style="display:none" tabindex="-1" autocomplete="off">
+
+            <div class="form-actions">
+                <button type="button" class="btn-cancel" id="cancelContactModal">Avbryt</button>
+                <button type="submit" class="btn-submit" id="submitContactForm" disabled>Skicka in</button>
+            </div>
+
+            <p class="form-status" id="formStatus" role="status" aria-live="polite"></p>
+        </form>
+    </div>
+</div>
+
+<script>
+(function () {
+    const openBtn = document.getElementById('openContactModal');
+    const modal = document.getElementById('contactModal');
+    const closeBtn = document.getElementById('closeContactModal');
+    const cancelBtn = document.getElementById('cancelContactModal');
+    const form = document.getElementById('contactForm');
+    const submitBtn = document.getElementById('submitContactForm');
+    const status = document.getElementById('formStatus');
+    const hint = document.getElementById('contactHint');
+
+    const nameInput = document.getElementById('cf-name');
+    const phoneInput = document.getElementById('cf-phone');
+    const emailInput = document.getElementById('cf-email');
+    const descInput = document.getElementById('cf-desc');
+
+    function openModal() {
+        modal.classList.add('is-open');
+        modal.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+        setTimeout(() => nameInput.focus(), 100);
+    }
+
+    function closeModal() {
+        modal.classList.remove('is-open');
+        modal.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = '';
+        status.textContent = '';
+        status.className = 'form-status';
+    }
+
+    function validateForm() {
+        const nameOk = nameInput.value.trim().length > 0;
+        const descOk = descInput.value.trim().length > 0;
+        const phoneOk = phoneInput.value.trim().length > 0;
+        const emailOk = emailInput.value.trim().length > 0;
+        const contactOk = phoneOk || emailOk;
+
+        // Visuell feedback för kontakt-hint
+        if (contactOk) {
+            hint.classList.add('is-ok');
+        } else {
+            hint.classList.remove('is-ok');
+        }
+
+        const allOk = nameOk && descOk && contactOk;
+        submitBtn.disabled = !allOk;
+        return allOk;
+    }
+
+    // Öppna popup
+    openBtn.addEventListener('click', openModal);
+
+    // Stäng: X-knapp
+    closeBtn.addEventListener('click', closeModal);
+
+    // Stäng: Avbryt-knapp
+    cancelBtn.addEventListener('click', closeModal);
+
+    // Stäng: klick utanför modalen
+    modal.addEventListener('click', function (e) {
+        if (e.target === modal) closeModal();
+    });
+
+    // Stäng: Escape-tangenten
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && modal.classList.contains('is-open')) {
+            closeModal();
+        }
+    });
+
+    // Live-validering
+    [nameInput, phoneInput, emailInput, descInput].forEach(input => {
+        input.addEventListener('input', validateForm);
+    });
+
+    // Hantera skickning
+    form.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        if (!validateForm()) return;
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Skickar...';
+        status.textContent = '';
+        status.className = 'form-status';
+
+        try {
+            const formData = new FormData(form);
+            const response = await fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: { 'Accept': 'application/json' }
+            });
+
+            if (response.ok) {
+                status.textContent = 'Tack! Vi återkommer så snart vi kan.';
+                status.classList.add('is-success');
+                form.reset();
+                submitBtn.textContent = 'Skicka in';
+                // Stäng automatiskt efter 3 sekunder
+                setTimeout(closeModal, 3000);
+            } else {
+                throw new Error('Serverfel');
+            }
+        } catch (err) {
+            status.textContent = 'Något gick fel. Kontakta oss gärna direkt via telefon eller e-post istället.';
+            status.classList.add('is-error');
+            submitBtn.textContent = 'Skicka in';
+            submitBtn.disabled = false;
+        }
+    });
+})();
+</script>
 
 </body>
 </html>
